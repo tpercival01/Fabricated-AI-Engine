@@ -81,10 +81,16 @@ class GenerateCaseRequest(BaseModel):
     theme: str = Field(..., description="The main theme of the mystery case")
     difficulty: Literal["easy", "medium", "hard"] = Field(default="medium", description="Difficulty level of the case")
 
-class GuessRequest(BaseModel):
+class AccuseRequest(BaseModel):
     suspect_id: str
+    clue_ids: List[str]
+    player_theory: str
 
-class InterrogationRequest(BaseModel):
-    suspect_id: str
-    message: str
-    chat_history: List[Dict[str,str]]
+class JudgeResponse(BaseModel):
+    is_correct: bool
+    feedback: str
+
+# class InterrogationRequest(BaseModel):
+#     suspect_id: str
+#     message: str
+#     chat_history: List[Dict[str,str]]
