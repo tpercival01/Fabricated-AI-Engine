@@ -1,5 +1,7 @@
 # Fabricated: AI Logic Engine (Backend)
 
+![Alt text describing the image](example.png)
+
 This is the FastAPI backend and AI orchestration layer for **Fabricated**, a procedural true-crime mystery game. 
 
 This API utilizes a custom 3-step generation pipeline with strict Pydantic schema validation to force a Large Language Model (Llama 3 70B via Groq) to design logically sound, hallucination-free murder mysteries on the fly.
