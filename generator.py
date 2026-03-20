@@ -3,7 +3,7 @@ import os
 import json
 from openai import OpenAI
 import time
-from models import CoreTruth, SuspectList, EvidenceBoard, MysteryCase
+from models import CoreTruth, SuspectList, EvidenceBoard, MysteryCase, JudgeResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -139,6 +139,62 @@ def generate_new_case(theme: str, difficulty: str = "medium", max_retries: int =
         solution_explanation=evidence_generated.solution_explanation
     )
     return final_case
+
+def judge_generator(prompt_dict):
+
+    core_truth = prompt_dict["core_truth"]
+    case_data = prompt_dict["case_data"]
+    case_theme = prompt_dict["case_theme"]
+    solution_explanation = prompt_dict["solution_explanation"]
+    clues = prompt_dict["game_clues"]
+    players_clues = prompt_dict["players_clues"]
+    player_theory = prompt_dict["player_theory"]
+    player_suspect_id = prompt_dict["player_suspect_id"]
+    accused_suspect_name = prompt_dict["accused_suspect_name"]
+    
+    judge_prompt = f"""
+        You are an authority figure, judge, or law enforcement officer appropriate for this era and setting: {case_theme}. 
+        A detective has submitted their final accusation for a murder case. You must grade their accusation based STRICTLY on the absolute truth of the case.
+
+        ABSOLUTE TRUTH:
+        The true killer is {core_truth['killer_name']}.
+        The real solution logic: {solution_explanation}
+
+        THE DETECTIVE'S ACCUSATION:
+        Accused Suspect Name: {accused_suspect_name}
+        Evidence Provided: {players_clues}
+        Detective's Theory: {player_theory}
+
+        RULES FOR GRADING:
+        1. If 'Accused Suspect Name' ({accused_suspect_name}) does NOT exactly match the true killer ({core_truth['killer_name']}), the player fails automatically. 'is_correct' MUST be false. 
+        2. If they accused the right person, BUT the 'Evidence Provided' does not prove the solution, or their theory is nonsense, they fail due to lack of evidence. 'is_correct' MUST be false.
+        3. If they accused the right person AND provided the correct evidence/theory, 'is_correct' MUST be true.
+        4. Write your 'feedback' directly to the detective IN CHARACTER based on the setting ({case_theme}). If they accused the wrong person, reprimand them harshly for almost ruining an innocent person's life.
+        5. Output ONLY valid JSON matching this schema: {json.dumps(JudgeResponse.model_json_schema())}
+        """
+    
+    print("Asking the AI Judge...")
+    try:
+      response = client.chat.completions.create(
+          model="llama-3.3-70b-versatile",
+          messages=[
+              {"role": "system", "content": judge_prompt},
+              {"role": "user", "content": "Grade the accusation now."}
+          ],
+          temperature=0.7,
+          response_format={"type": "json_object"}
+      )
+      
+      raw_json_string = response.choices[0].message.content
+      
+      raw_json_string = raw_json_string.strip("`").removeprefix("json").strip()
+      
+      judge_decision = JudgeResponse.model_validate_json(raw_json_string)
+          
+      return judge_decision
+
+    except Exception as e:
+        print(f"Judge Error: {e}")
 
 def api_call(prompt: str, model_class, max_retries: int = 5):
     for attempt in range(max_retries):
