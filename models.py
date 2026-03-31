@@ -94,3 +94,8 @@ class JudgeResponse(BaseModel):
 #     suspect_id: str
 #     message: str
 #     chat_history: List[Dict[str,str]]
+
+class ActionRequest(BaseModel):
+    session_id: str
+    action_type: Literal["search", "interrogate", "synthesize"]
+    target_node_id: str
